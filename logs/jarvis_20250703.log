@@ -1,0 +1,9 @@
+2025-07-03 16:41:18 - INFO - JarvisLogger - This is an info message
+2025-07-03 16:41:18 - WARNING - JarvisLogger - This is a warning message
+2025-07-03 16:41:18 - ERROR - JarvisLogger - This is an error message
+2025-07-03 17:41:14 - INFO - JarvisLogger - ArXiv fetcher logger initialized
+2025-07-03 17:41:14 - INFO - JarvisLogger - Starting fetch for query: machine learning in psychology and social sciences
+2025-07-03 17:41:56 - INFO - JarvisLogger - Fetched 20 papers from ArXiv for query: machine learning in psychology and social sciences
+2025-07-03 17:52:13 - INFO - JarvisLogger - ArXiv fetcher logger initialized
+2025-07-03 17:52:13 - INFO - JarvisLogger - Starting fetch for query: machine learning in psychology and social sciences
+2025-07-03 17:53:13 - INFO - JarvisLogger - Fetched 20 papers from ArXiv for query: machine learning in psychology and social sciences
