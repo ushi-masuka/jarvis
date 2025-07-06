@@ -1,0 +1,103 @@
+Below is a complete list of fetchers and all other currently conceived modules for your Jarvis project. This list includes data-fetching components (fetchers) and supporting modules designed to enhance functionality, based on the project’s research-oriented goals. Each item includes its purpose and current development status.
+
+---
+
+### Fetchers (Data Sources)
+Fetchers are modules designed to retrieve data from external sources, tailored to specific databases or APIs.
+
+1. **ArXiv Fetcher** (`arxiv_fetcher.py`)  
+   - **Purpose**: Retrieves preprints from ArXiv, focusing on cutting-edge research in fields like computer science, physics, and mathematics.  
+   - **Status**: Completed  
+
+2. **PubMed Fetcher** (`pubmed_fetcher.py`)  
+   - **Purpose**: Fetches abstracts and metadata from PubMed, with optional full-text retrieval via PMC or Unpaywall, targeting biomedical and life sciences literature.  
+   - **Status**: Completed  
+
+3. **Semantic Scholar Fetcher** (`semantic_scholar_fetcher.py`)  
+   - **Purpose**: Obtains academic papers from Semantic Scholar, including metadata, abstracts, and citation data across various disciplines.  
+   - **Status**: Completed  
+
+4. **Web Search Fetcher**  
+   - **Purpose**: Gathers web articles, blogs, or general content using a search API (e.g., Google Custom Search) to capture current trends and non-academic discussions.  
+   - **Status**: built  
+
+5. **Social Media Fetcher**  
+   - **Purpose**: Collects posts or discussions from social media platforms like X (formerly Twitter) to provide real-time insights and community perspectives.  
+   - **Status**: Not yet built  
+
+6. **Other Academic Database Fetchers** (e.g., IEEE Xplore, Springer, Google Scholar)  
+   - **Purpose**: Expands coverage to additional paid or niche academic databases, potentially requiring extra setup or paid APIs.  
+   - **Status**: Not yet built (optional, low priority)  
+
+---
+
+### Supporting Modules
+These modules handle tasks like query processing, data analysis, and user interaction to complement the fetchers and create a cohesive system.
+
+1. **Query Processor** (`query_processor.py`)  
+   - **Purpose**: Refines and expands user queries using techniques such as synonym expansion (e.g., via WordNet) or potentially LLM-based methods.  
+   - **Status**: Partially built (needs further development for advanced refinement)  
+
+2. **Memory Module** (`memory.py`)  
+   - **Purpose**: Tracks conversational memory and project context, storing past queries and results to improve future searches.  
+   - **Status**: Not yet built  
+
+3. **Data Analyzer** (`data_analyzer.py`)  
+   - **Purpose**: Analyzes fetched data to identify trends, emerging topics, and citation networks, aiding in finding influential papers or new research directions.  
+   - **Status**: Not yet built  
+
+4. **Data Processor** (`data_processor.py`)  
+   - **Purpose**: Processes retrieved data with features like automated summarization and language translation for better accessibility.  
+   - **Status**: Not yet built  
+
+5. **RAG CLI** (`rag_cli.py`)  
+   - **Purpose**: Provides a command-line interface for user interaction, including query input, feedback, and result display.  
+   - **Status**: Partially built (in progress)  
+
+6. **Logger** (`logger.py`)  
+   - **Purpose**: Implements centralized logging for the entire application, ensuring consistent tracking of events and errors.  
+   - **Status**: Completed and integrated  
+
+7. **Settings** (`settings.py`)  
+   - **Purpose**: Loads and validates configuration settings from a `.env` file, including API keys and other constants.  
+   - **Status**: Completed and integrated  
+
+---
+
+### Additional Potential Modules
+These optional modules could further enhance the system’s capabilities if needed.
+
+1. **Full-Text Fetcher** (`full_text_fetcher.py`)  
+   - **Purpose**: A reusable module to fetch full-text PDFs or XMLs using services like Unpaywall or PMC, reducing redundancy across fetchers.  
+   - **Status**: Not yet built (suggested for future refactoring)  
+
+2. **Multi-Modal Fetcher**  
+   - **Purpose**: Retrieves non-text content such as images or videos, useful if research requires diverse media types.  
+   - **Status**: Not yet built (low priority unless required)  
+
+---
+
+### Summary Table
+Here’s a concise overview of all fetchers and modules:
+
+| **Module/Fetcher**          | **Purpose**                                      | **Status**          |
+|-----------------------------|--------------------------------------------------|---------------------|
+| ArXiv Fetcher               | Fetches preprints from ArXiv                     | Completed           |
+| PubMed Fetcher              | Fetches abstracts and full texts from PubMed     | Completed           |
+| Semantic Scholar Fetcher    | Fetches papers from Semantic Scholar             | Completed           |
+| Web Search Fetcher          | Fetches web articles and blogs                   | Not yet built       |
+| Social Media Fetcher        | Fetches posts from social media (e.g., X)        | Not yet built       |
+| Other Academic Fetchers     | Fetches from IEEE, Springer, etc. (optional)     | Not yet built       |
+| Query Processor             | Refines and expands user queries                 | Partially built     |
+| Memory Module               | Maintains project context and history            | Not yet built       |
+| Data Analyzer               | Analyzes data for trends and citations           | Not yet built       |
+| Data Processor              | Processes data (summarization, translation)      | Not yet built       |
+| RAG CLI                     | User interface for interaction and feedback      | Partially built     |
+| Logger                      | Centralized logging                              | Completed           |
+| Settings                    | Loads and validates configuration                | Completed           |
+| Full-Text Fetcher (optional)| Reusable full-text retrieval logic               | Not yet built       |
+| Multi-Modal Fetcher (opt.)  | Fetches non-text content (images, videos)        | Not yet built       |
+
+---
+
+This list covers all currently envisioned components for your Jarvis project. The completed fetchers (ArXiv, PubMed, Semantic Scholar) provide a strong foundation for academic research, while the supporting modules and additional fetchers offer opportunities to expand functionality and data scope. Let me know if you’d like to prioritize or refine any of these!

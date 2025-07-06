@@ -6,11 +6,19 @@ def setup_logger():
     """
     Set up and configure a logger for the application.
 
+    The logger is set up to log messages of level INFO or higher to a file and
+    the console. The file name is in the format "jarvis_<date>.log", where
+    <date> is the current date in the format "%Y%m%d".
+
+    If the logger has already been configured, this function does nothing and
+    simply returns the configured logger.
+
     Returns:
         logging.Logger: A configured logger instance.
     """
     # Create a logger
     logger = logging.getLogger("JarvisLogger")
+    logger.setLevel(logging.INFO)  # Default log level is INFO
     logger.setLevel(logging.INFO)  # Default log level
 
     # Avoid duplicate logging if already configured

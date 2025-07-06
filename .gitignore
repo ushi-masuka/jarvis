@@ -1,2 +1,6 @@
 venv/
 .env
+client_secret_957657226727-tepiv2o48f2un9nt2kuokg201t022um7.apps.googleusercontent.com.json
+logs/
+__pycache__/
+data/

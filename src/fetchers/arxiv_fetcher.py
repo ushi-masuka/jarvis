@@ -22,32 +22,51 @@ def fetch_arxiv(query: str, project_name: str) -> list:
     Returns:
         list: A list of dictionaries containing metadata of the fetched papers.
     """
+
+    # Create an ArXiv client
     logger.info(f"Starting fetch for query: {query}")
     client = arxiv.Client()
+
+    # Create a search query with the following parameters:
+    #   - query: The search query
+    #   - max_results: 20
+    #   - sort_by: Submitted date
+    #   - sort_order: Descending
     search = arxiv.Search(
         query=query,
         max_results=20,
         sort_by=arxiv.SortCriterion.SubmittedDate,
         sort_order=arxiv.SortOrder.Descending
     )
+
+    # Try to fetch the search results
     try:
+        # Get the results of the search
         results = list(client.results(search))
     except arxiv.UnexpectedEmptyPageError as e:
+        # If there's an unexpected empty page error, log the error and return an empty list
         logger.error(f"Unexpected empty page error for query '{query}': {e}")
         return []
     except Exception as e:
+        # If there's any other error, log the error and return an empty list
         logger.error(f"Error fetching results for query '{query}': {e}")
         return []
 
+    # If there are no results, log the message and return an empty list
     if not results:
         logger.info(f"No results found for query: {query}")
         return []
 
+    # Create a list to store the metadata of the papers
     papers = []
-    data_dir = os.path.join("data", project_name)
+
+    # Create the directory for the project if it doesn't exist
+    data_dir = os.path.join("data", project_name,"arxiv")
     os.makedirs(data_dir, exist_ok=True)
 
+    # Iterate over the results and extract the metadata of each paper
     for result in results:
+        # Create a dictionary to store the metadata of the paper
         paper_info = {
             "title": result.title,
             "authors": [author.name for author in result.authors],
@@ -55,17 +74,27 @@ def fetch_arxiv(query: str, project_name: str) -> list:
             "summary": result.summary,
             "pdf_url": result.pdf_url
         }
+
+        # Add the paper's metadata to the list
         papers.append(paper_info)
+
+        # Try to download the PDF of the paper
         try:
+            # Download the PDF to the project directory
             result.download_pdf(dirpath=data_dir, filename=f"{result.entry_id.split('/')[-1]}.pdf")
         except Exception as e:
+            # If there's an error downloading the PDF, log the error and continue to the next paper
             logger.error(f"Failed to download PDF for {result.entry_id}: {e}")
             continue
 
+    # Create a file to store the metadata of the papers
     metadata_path = os.path.join(data_dir, "metadata.json")
+
+    # Open the file and dump the metadata to it
     with open(metadata_path, "w") as f:
         json.dump(papers, f, indent=4)
 
+    # Log the number of papers fetched
     logger.info(f"Fetched {len(papers)} papers from ArXiv for query: {query}")
     return papers
 
