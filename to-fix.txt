@@ -1,5 +1,6 @@
 1. special words are being removed from query: to preserve them or not?
-2. query processor revamp
+2. query processor revamp.(use llm for better query generation based on the perticular fetcher.)
 3. add fetchers- web scraping for trends and find new things
 4. feature to show the names/links of papers that could have been relevant but are behind a paywall.
 5. arxiv fetcher returning shit results. 
+6. add more fetchers.

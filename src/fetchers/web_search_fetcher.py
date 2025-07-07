@@ -102,5 +102,5 @@ def fetch_websearch(query: str, project_name: str) -> list:
 
 if __name__ == "__main__":
     test_query = "machine learning in psychology"
-    test_project = "test_project2"
+    test_project = "test_project"
     fetch_websearch(test_query, test_project)
