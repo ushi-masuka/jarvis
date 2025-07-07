@@ -1,6 +1,12 @@
 venv/
 .env
-client_secret_957657226727-tepiv2o48f2un9nt2kuokg201t022um7.apps.googleusercontent.com.json
+client_secret_326354874569-f9u2fdi291aa7pn6q922ujsuu1bs8o62.apps.googleusercontent.com.json
 logs/
 __pycache__/
 data/
+.vscode/
+.idea/
+*.pyc
+*.pyo
+*.pyd
+*.db
