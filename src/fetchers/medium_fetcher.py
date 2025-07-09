@@ -9,9 +9,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-# Add the project root to sys.path to find the src module
+from datetime import datetime
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from src.utils.logger import setup_logger
+from src.utils.metadata_schema import Metadata
 
 logger = setup_logger()
 
@@ -23,44 +25,38 @@ class MediumFetcher:
         }
         self.max_articles = max_articles
         self.ignore_robots = ignore_robots
-        self.chromedriver_path = chromedriver_path or "D:/jarvis/chromedriver.exe"  # Default path
+        self.chromedriver_path = chromedriver_path or "D:/jarvis/chromedriver.exe"
         self.robot_parser = RobotFileParser()
         self.robot_parser.set_url("https://medium.com/robots.txt")
         self.robot_parser.read()
 
     def is_allowed(self, url):
-        """Check if the URL is allowed by robots.txt."""
-        return self.robot_parser.can_fetch(self.headers["User-Agent"], url)
+        return self.ignore_robots or self.robot_parser.can_fetch(self.headers["User-Agent"], url)
 
     def fetch_articles(self, query):
-        """Fetch article metadata from Medium based on a search query."""
         articles = []
-        params = {"q": query}
         output_dir = os.path.join("data", "test_project", "medium")
         os.makedirs(output_dir, exist_ok=True)
         full_url = f"{self.base_url}?q={query.replace(' ', '+')}"
+        fetch_date = datetime.now().isoformat()
 
         try:
-            # Set up Selenium with headless Chrome
             chrome_options = Options()
             chrome_options.add_argument("--headless")
             chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--no-sandbox")  # For Windows compatibility
+            chrome_options.add_argument("--no-sandbox")
             logger.debug(f"Using ChromeDriver at: {self.chromedriver_path}")
             driver = webdriver.Chrome(executable_path=self.chromedriver_path, options=chrome_options)
 
             driver.get(full_url)
             logger.debug(f"Page title: {driver.title}")
 
-            # Wait for articles to load
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.TAG_NAME, "article"))
             )
 
-            # Get the page source after JavaScript rendering
             soup = BeautifulSoup(driver.page_source, "html.parser")
-            logger.debug(f"Found {len(soup.find_all('div'))} div tags in response")
-            article_blocks = soup.find_all("article")  # Try article tag as a starting point
+            article_blocks = soup.find_all("article")
 
             if not article_blocks:
                 logger.warning("No article blocks found with tag 'article'. Trying 'div' as fallback.")
@@ -83,15 +79,28 @@ class MediumFetcher:
                 if link and not link.startswith("http"):
                     link = "https://medium.com" + link
 
-                entry = {
-                    "title": title,
-                    "link": link,
-                    "published": published,
-                    "summary": summary
-                }
-                articles.append(entry)
+                meta = Metadata(
+                    id=link.replace("http://", "").replace("https://", "").replace("/", "_"),
+                    title=title,
+                    authors=[],
+                    published=published,
+                    summary=summary,
+                    source="medium",
+                    link=link,
+                    pdf_url=None,
+                    doi=None,
+                    pmid=None,
+                    paperId=None,
+                    citationCount=None,
+                    displayLink=None,
+                    tags=None,
+                    fetch_date=fetch_date,
+                    paywalled=None,
+                    extra=None
+                )
+                articles.append(meta.model_dump())
                 logger.info(f"Fetched article: {title}")
-                time.sleep(1)  # Rate limit to 1 request/second
+                time.sleep(1)
 
             driver.quit()
 

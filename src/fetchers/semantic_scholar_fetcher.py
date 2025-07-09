@@ -1,16 +1,17 @@
 import os
 import sys
 import json
-import requests
 from datetime import datetime
 from tenacity import retry, stop_after_attempt, wait_fixed
+
+# Add project root to sys.path for CLI execution
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 from src.utils.logger import setup_logger
+from src.utils.metadata_schema import Metadata
 
 logger = setup_logger()
 logger.info("Semantic Scholar fetcher logger initialized")
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def fetch_semantic_scholar(query: str, project_name: str) -> list:
@@ -22,74 +23,23 @@ def fetch_semantic_scholar(query: str, project_name: str) -> list:
         project_name (str): The name of the project to save the papers under.
 
     Returns:
-        list: A list of dictionaries containing metadata of the fetched papers.
+        list: A list of Metadata objects (as dicts) for the fetched papers.
     """
+    import requests
+
     logger.info(f"Starting fetch for query: {query}")
 
-    # Construct the API request URL and parameters.
-    url = "http://api.semanticscholar.org/graph/v1/paper/search/bulk"
+    url = "https://api.semanticscholar.org/graph/v1/paper/search"
     params = {
-        # The search query to use.
         "query": query,
-        # The number of results to request.
-        "limit": 20,
-        # The fields to include in the response.
-        "fields": "title,authors,abstract,year,citationCount,paperId"
+        "limit": 10,
+        "fields": "title,authors,abstract,year,citationCount,paperId,externalIds,url,isOpenAccess"
     }
 
     try:
-        # Make the request and get the response.
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         data = response.json()
-
-        # If there are no results, log a message and return an empty list.
-        if not data.get("data") or not data["data"]:
-            logger.info(f"No results found for query: {query}")
-            return []
-
-        # Create a list to store the metadata for the fetched papers.
-        papers = []
-
-        # Create the directory for storing the metadata files if it doesn't exist.
-        data_dir = os.path.join("data", project_name, "semanticscholar")
-        os.makedirs(data_dir, exist_ok=True)
-
-        # Iterate over the results and extract the metadata.
-        for paper in data["data"]:
-            # Extract the title, authors, abstract, year, citation count, and paper ID.
-            paper_info = {
-                # The title of the paper, or "No title available" if not present.
-                "title": paper.get("title", "No title available"),
-                # The authors of the paper, or a list containing "Unknown Author" if not present.
-                "authors": [author.get("name", "Unknown Author") for author in paper.get("authors", [])] or ["Unknown Author"],
-                # The year the paper was published, or the current year if not present.
-                "published": str(paper.get("year", datetime.now().year)),
-                # The abstract of the paper, or "No abstract available" if not present.
-                "summary": paper.get("abstract", "No abstract available"),
-                # The paper ID, or an empty string if not present.
-                "paperId": paper.get("paperId", ""),
-                # The citation count of the paper, or 0 if not present.
-                "citationCount": paper.get("citationCount", 0)
-            }
-
-            # Add the paper's metadata to the list.
-            papers.append(paper_info)
-
-            # Save the metadata to a JSON file per paper.
-            metadata_path = os.path.join(data_dir, f"{paper_info['paperId']}.json")
-            with open(metadata_path, "w", encoding="utf-8") as f:
-                json.dump(paper_info, f, indent=4, ensure_ascii=False)
-
-        # Save all metadata to a single file.
-        all_metadata_path = os.path.join(data_dir, "metadata.json")
-        with open(all_metadata_path, "w", encoding="utf-8") as f:
-            json.dump(papers, f, indent=4, ensure_ascii=False)
-
-        # Log a message indicating how many papers were fetched.
-        logger.info(f"Fetched {len(papers)} papers from Semantic Scholar for query: {query}")
-        return papers
-
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching from Semantic Scholar for query '{query}': {e}")
         return []
@@ -97,7 +47,76 @@ def fetch_semantic_scholar(query: str, project_name: str) -> list:
         logger.error(f"Unexpected error fetching from Semantic Scholar for query '{query}': {e}")
         return []
 
-if __name__ == "__main__":
-    test_query = "machine learning in psychology"
+    if not data.get("data"):
+        logger.info(f"No results found for query: {query}")
+        return []
+
+    papers = []
+    data_dir = os.path.join("data", project_name, "semanticscholar")
+    os.makedirs(data_dir, exist_ok=True)
+    fetch_date = datetime.now().isoformat()
+
+    for paper in data["data"]:
+        # Prefer DOI, then paperId, then url hash for id
+        doi = paper.get("externalIds", {}).get("DOI")
+        paper_id = paper.get("paperId")
+        url_val = paper.get("url")
+        id_val = doi or paper_id or (url_val.replace("https://", "").replace("http://", "").replace("/", "_") if url_val else "")
+
+        # Paywall detection (isOpenAccess is True if not paywalled)
+        is_open_access = paper.get("isOpenAccess", None)
+        paywalled = None if is_open_access is None else not is_open_access
+
+        try:
+            paper_meta = Metadata(
+                id=id_val,
+                title=paper.get("title", "No title available"),
+                authors=[author.get("name", "Unknown Author") for author in paper.get("authors", [])] or ["Unknown Author"],
+                published=str(paper.get("year", "")),
+                summary=paper.get("abstract", "No abstract available"),
+                source="semanticscholar",
+                link=url_val or "",
+                pdf_url=None,  # Semantic Scholar API does not provide direct PDF links
+                doi=doi,
+                pmid=paper.get("externalIds", {}).get("PMID"),
+                paperId=paper_id,
+                citationCount=paper.get("citationCount"),
+                displayLink=None,
+                tags=None,
+                fetch_date=fetch_date,
+                paywalled=paywalled,
+                extra={"externalIds": paper.get("externalIds", {})}
+            )
+            papers.append(paper_meta.model_dump())
+            logger.info(f"Added paper: {paper_meta.title}")
+        except Exception as e:
+            logger.error(f"Error creating metadata for {id_val}: {e}")
+            continue
+
+    # Save all metadata to a single file
+    all_metadata_path = os.path.join(data_dir, "metadata.json")
+    with open(all_metadata_path, "w", encoding="utf-8") as f:
+        json.dump(papers, f, indent=4, ensure_ascii=False)
+    logger.info(f"Fetched and saved {len(papers)} papers from Semantic Scholar for query: {query}")
+
+    return papers
+
+# ----------------- TESTS -----------------
+def test_fetch_semantic_scholar():
+    """
+    Test the Semantic Scholar fetcher with a sample query and project.
+    """
+    test_query = "science"
     test_project = "test_project"
-    fetch_semantic_scholar(test_query, test_project)
+    logger.info("Running test_fetch_semantic_scholar...")
+    results = fetch_semantic_scholar(test_query, test_project)
+    assert isinstance(results, list), "Result should be a list"
+    if results:
+        first = results[0]
+        assert "id" in first and "title" in first, "Metadata missing required fields"
+        logger.info(f"Test passed: {len(results)} results, first title: {first['title']}")
+    else:
+        logger.warning("Test returned no results (may be a query issue)")
+
+if __name__ == "__main__":
+    test_fetch_semantic_scholar()

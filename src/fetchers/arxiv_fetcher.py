@@ -1,11 +1,14 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-import arxiv
 import json
 from datetime import datetime
 from tenacity import retry, stop_after_attempt, wait_fixed
+
+# Add project root to sys.path for CLI execution
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 from src.utils.logger import setup_logger
+from src.utils.metadata_schema import Metadata
 
 logger = setup_logger()
 logger.info("ArXiv fetcher logger initialized")
@@ -14,91 +17,96 @@ logger.info("ArXiv fetcher logger initialized")
 def fetch_arxiv(query: str, project_name: str) -> list:
     """
     Fetch papers from ArXiv based on the query and save them to the project directory.
-
-    Args:
-        query (str): The search query.
-        project_name (str): The name of the project to save the papers under.
-
-    Returns:
-        list: A list of dictionaries containing metadata of the fetched papers.
     """
+    import arxiv  # Local import to avoid issues if not installed elsewhere
 
-    # Create an ArXiv client
     logger.info(f"Starting fetch for query: {query}")
     client = arxiv.Client()
 
-    # Create a search query with the following parameters:
-    #   - query: The search query
-    #   - max_results: 20
-    #   - sort_by: Submitted date
-    #   - sort_order: Descending
     search = arxiv.Search(
         query=query,
-        max_results=20,
+        max_results=10,
         sort_by=arxiv.SortCriterion.SubmittedDate,
         sort_order=arxiv.SortOrder.Descending
     )
 
-    # Try to fetch the search results
     try:
-        # Get the results of the search
         results = list(client.results(search))
     except arxiv.UnexpectedEmptyPageError as e:
-        # If there's an unexpected empty page error, log the error and return an empty list
         logger.error(f"Unexpected empty page error for query '{query}': {e}")
         return []
     except Exception as e:
-        # If there's any other error, log the error and return an empty list
         logger.error(f"Error fetching results for query '{query}': {e}")
         return []
 
-    # If there are no results, log the message and return an empty list
     if not results:
         logger.info(f"No results found for query: {query}")
         return []
 
-    # Create a list to store the metadata of the papers
     papers = []
-
-    # Create the directory for the project if it doesn't exist
-    data_dir = os.path.join("data", project_name,"arxiv")
+    data_dir = os.path.join("data", project_name, "arxiv")
     os.makedirs(data_dir, exist_ok=True)
+    fetch_date = datetime.now().isoformat()
 
-    # Iterate over the results and extract the metadata of each paper
     for result in results:
-        # Create a dictionary to store the metadata of the paper
-        paper_info = {
-            "title": result.title,
-            "authors": [author.name for author in result.authors],
-            "published": result.published.isoformat(),
-            "summary": result.summary,
-            "pdf_url": result.pdf_url
-        }
+        arxiv_id = result.entry_id.split('/')[-1]
+        canonical_link = f"https://arxiv.org/abs/{arxiv_id}"
 
-        # Add the paper's metadata to the list
-        papers.append(paper_info)
-
-        # Try to download the PDF of the paper
         try:
-            # Download the PDF to the project directory
-            result.download_pdf(dirpath=data_dir, filename=f"{result.entry_id.split('/')[-1]}.pdf")
+            paper_meta = Metadata(
+                id=arxiv_id,
+                title=result.title,
+                authors=[author.name for author in result.authors],
+                published=result.published.isoformat() if hasattr(result.published, "isoformat") else str(result.published),
+                summary=result.summary,
+                source="arxiv",
+                link=canonical_link,
+                pdf_url=result.pdf_url,
+                doi=None,
+                pmid=None,
+                paperId=None,
+                citationCount=None,
+                displayLink=None,
+                tags=None,
+                fetch_date=fetch_date,
+                paywalled=None,
+                extra=None
+            )
+            papers.append(paper_meta.model_dump())
+            logger.info(f"Added paper: {result.title}")
         except Exception as e:
-            # If there's an error downloading the PDF, log the error and continue to the next paper
-            logger.error(f"Failed to download PDF for {result.entry_id}: {e}")
+            logger.error(f"Error creating metadata for {arxiv_id}: {e}")
             continue
 
-    # Create a file to store the metadata of the papers
+        try:
+            result.download_pdf(dirpath=data_dir, filename=f"{arxiv_id}.pdf")
+            logger.info(f"Downloaded PDF for {arxiv_id}")
+        except Exception as e:
+            logger.warning(f"Failed to download PDF for {arxiv_id}: {e}")
+
     metadata_path = os.path.join(data_dir, "metadata.json")
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        json.dump(papers, f, indent=4, ensure_ascii=False)
+    logger.info(f"Fetched and saved {len(papers)} papers from ArXiv for query: {query}")
 
-    # Open the file and dump the metadata to it
-    with open(metadata_path, "w") as f:
-        json.dump(papers, f, indent=4)
-
-    # Log the number of papers fetched
-    logger.info(f"Fetched {len(papers)} papers from ArXiv for query: {query}")
     return papers
 
-if __name__ == "__main__":
-    test_query = "machine learning in psychology and social sciences"
+# ----------------- TESTS -----------------
+def test_fetch_arxiv():
+    """
+    Test the ArXiv fetcher with a sample query and project.
+    """
+    test_query = "protein protein network analysis"
     test_project = "test_project"
-    fetch_arxiv(test_query, test_project)
+    logger.info("Running test_fetch_arxiv...")
+    results = fetch_arxiv(test_query, test_project)
+    assert isinstance(results, list), "Result should be a list"
+    if results:
+        first = results[0]
+        assert "id" in first and "title" in first, "Metadata missing required fields"
+        logger.info(f"Test passed: {len(results)} results, first title: {first['title']}")
+    else:
+        logger.warning("Test returned no results (may be a query issue)")
+
+if __name__ == "__main__":
+    test_fetch_arxiv()

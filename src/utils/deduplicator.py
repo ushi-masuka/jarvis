@@ -56,12 +56,14 @@ def deduplicate_metadata(project_name: str) -> list:
                         continue
 
                     for entry in entries:
-                        # Extract the first available identifier from ["doi", "pmid", "paperId", "pdf_url", "id", "link"]
-                        identifier = next((entry.get(field) for field in ["doi", "pmid", "paperId", "pdf_url", "id", "link"] if entry.get(field)), None)
-                        if identifier and field in ["link", "pdf_url"]:
-                            # Sanitize link if used as identifier
-                            identifier = identifier.replace("http://", "").replace("https://", "").replace("/", "_")
-                        
+                        identifier = None
+                        for field in ["doi", "pmid", "paperId", "pdf_url", "id", "link"]:
+                            value = entry.get(field)
+                            if value:
+                                if field in ["link", "pdf_url"]:
+                                    value = value.replace("http://", "").replace("https://", "").replace("/", "_")
+                                identifier = value
+                                break
                         if identifier:
                             identifier_hash = hash(str(identifier))
                             if identifier_hash not in seen_identifiers:
