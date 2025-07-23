@@ -1,28 +1,40 @@
+"""
+Defines the Pydantic-based unified metadata schema for the application.
+
+This schema standardizes the structure of metadata collected from various sources,
+including academic databases (e.g., arXiv, PubMed) and general web content.
+Using Pydantic ensures data validation, type enforcement, and clear documentation
+for all data interchange operations.
+"""
+
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class Metadata(BaseModel):
     """
-    Unified metadata schema for all data sources (papers, articles, blogs, web, etc.).
-    Fields are designed to be as inclusive as possible for academic and web content.
+    A Pydantic model representing a single metadata entry.
+
+    This model serves as the canonical structure for any document, article, or resource
+    processed by the system. It includes fields for academic citations, web sources,
+    and internal tracking.
     """
-    id: str = Field(..., description="Unique identifier (DOI, PMID, arXiv ID, URL hash, etc.)")
-    title: str = Field(..., description="Title of the work")
-    authors: List[str] = Field(default_factory=list, description="List of author names")
-    published: str = Field(..., description="ISO 8601 date or year of publication")
-    summary: str = Field(..., description="Abstract, summary, or snippet of the work")
-    source: str = Field(..., description="Source/fetcher name (arxiv, pubmed, semanticscholar, web, blog, etc.)")
-    link: str = Field(..., description="Canonical URL to the work (PDF, landing page, etc.)")
-    pdf_url: Optional[str] = Field(None, description="Direct link to PDF (if available)")
-    doi: Optional[str] = Field(None, description="DOI (if available)")
-    pmid: Optional[str] = Field(None, description="PubMed ID (if available)")
-    paperId: Optional[str] = Field(None, description="Semantic Scholar ID (if available)")
-    citationCount: Optional[int] = Field(None, description="Number of citations (if available)")
-    displayLink: Optional[str] = Field(None, description="Display domain (for web/blog/news)")
-    tags: Optional[List[str]] = Field(None, description="List of tags, keywords, or categories")
-    fetch_date: Optional[str] = Field(None, description="When this record was fetched (ISO 8601)")
-    paywalled: Optional[bool] = Field(None, description="True if the content is behind a paywall")
-    extra: Optional[Dict[str, Any]] = Field(None, description="Any additional source-specific metadata")
+    id: str = Field(..., description="A unique identifier for the metadata entry. Can be a DOI, PMID, arXiv ID, or a hash of the URL.")
+    title: str = Field(..., description="The primary title of the document or resource.")
+    authors: List[str] = Field(default_factory=list, description="A list of author names associated with the work.")
+    published: str = Field(..., description="The publication date in ISO 8601 format or year as a string.")
+    summary: str = Field(..., description="A summary, abstract, or snippet of the content.")
+    source: str = Field(..., description="The name of the source fetcher (e.g., 'arxiv', 'websearch').")
+    link: str = Field(..., description="The canonical URL linking to the resource's landing page or main entry.")
+    pdf_url: Optional[str] = Field(None, description="A direct URL to the PDF version of the document, if available.")
+    doi: Optional[str] = Field(None, description="The Digital Object Identifier (DOI) of the work, if available.")
+    pmid: Optional[str] = Field(None, description="The PubMed ID (PMID) for biomedical literature, if available.")
+    paperId: Optional[str] = Field(None, description="The Semantic Scholar Paper ID, if available.")
+    citationCount: Optional[int] = Field(None, description="The citation count for the work, if available.")
+    displayLink: Optional[str] = Field(None, description="The display URL or domain name, typically for web search results.")
+    tags: Optional[List[str]] = Field(None, description="A list of keywords, tags, or categories associated with the work.")
+    fetch_date: Optional[str] = Field(None, description="The ISO 8601 timestamp indicating when the metadata was fetched.")
+    paywalled: Optional[bool] = Field(None, description="A boolean flag indicating if the content is behind a paywall.")
+    extra: Optional[Dict[str, Any]] = Field(None, description="A dictionary for any other source-specific metadata fields.")
 
     class Config:
         json_schema_extra = {

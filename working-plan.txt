@@ -1,103 +1,54 @@
-Below is a complete list of fetchers and all other currently conceived modules for your Jarvis project. This list includes data-fetching components (fetchers) and supporting modules designed to enhance functionality, based on the project’s research-oriented goals. Each item includes its purpose and current development status.
+# Jarvis - Phased Working Plan
+
+This document outlines a clear, actionable roadmap for developing the Jarvis research assistant. It is divided into phases, starting with foundational improvements and progressing to more advanced capabilities.
 
 ---
 
-### Fetchers (Data Sources)
-Fetchers are modules designed to retrieve data from external sources, tailored to specific databases or APIs.
+### **Phase 1: Strengthen the Core (Data Quality & Robustness)**
 
-1. **ArXiv Fetcher** (`arxiv_fetcher.py`)  
-   - **Purpose**: Retrieves preprints from ArXiv, focusing on cutting-edge research in fields like computer science, physics, and mathematics.  
-   - **Status**: Completed  
+*   **Goal:** Fix the foundational issues that are currently limiting your system's effectiveness: poor data extraction and ingestion errors. A high-quality dataset is the most critical asset.
 
-2. **PubMed Fetcher** (`pubmed_fetcher.py`)  
-   - **Purpose**: Fetches abstracts and metadata from PubMed, with optional full-text retrieval via PMC or Unpaywall, targeting biomedical and life sciences literature.  
-   - **Status**: Completed  
-
-3. **Semantic Scholar Fetcher** (`semantic_scholar_fetcher.py`)  
-   - **Purpose**: Obtains academic papers from Semantic Scholar, including metadata, abstracts, and citation data across various disciplines.  
-   - **Status**: Completed  
-
-4. **Web Search Fetcher**  
-   - **Purpose**: Gathers web articles, blogs, or general content using a search API (e.g., Google Custom Search) to capture current trends and non-academic discussions.  
-   - **Status**: built  
-
-5. **Social Media Fetcher**  
-   - **Purpose**: Collects posts or discussions from social media platforms like X (formerly Twitter) to provide real-time insights and community perspectives.  
-   - **Status**: Not yet built  
-
-6. **Other Academic Database Fetchers** (e.g., IEEE Xplore, Springer, Google Scholar)  
-   - **Purpose**: Expands coverage to additional paid or niche academic databases, potentially requiring extra setup or paid APIs.  
-   - **Status**: Not yet built (optional, low priority)  
+*   **Actionable Steps:**
+    1.  **Fix Known Bugs:**
+        *   **Task:** In `fetchers/blog_fetcher.py`, remove the `output_type="json"` argument from the `trafilatura.extract()` call to eliminate the warning and potential errors.
+    2.  **Build a Multi-Layered Extraction Pipeline:**
+        *   **Goal:** Drastically increase the success rate of full-text extraction by creating a resilient, multi-step process.
+        *   **Tasks:**
+            *   **A. Implement a Tiered Extractor Chain:** In `utils/extraction.py`, modify `extract_text_from_html` to try a sequence of extractors until one succeeds. The recommended order is: `trafilatura` -> `readability-lxml` -> `newspaper3k` -> `boilerpy3`.
+            *   **B. Add PDF Extraction:** Create a new function `extract_text_from_pdf` in `utils/extraction.py` using the `PyMuPDF` library to handle PDF documents.
+            *   **C. Implement Retry Logic:** Wrap the initial URL fetch (e.g., `trafilatura.fetch_url`) in a `try...except` block with a simple retry loop (2-3 attempts) to handle transient network errors.
+            *   **D. (Optional/Advanced) Handle JavaScript:** For key sources that are heavily JS-based, create a helper function that uses `selenium` or `playwright` to render the page before passing the HTML to the extractor chain.
+    3.  **Sanitize Data for Ingestion:**
+        *   **Task:** In `ingest.py`, before the `collection.upsert()` call, add a "sanitization" step. This step should loop through the metadata of each document and convert any list values into comma-separated strings to prevent ChromaDB errors.
+    4.  **Add Basic Reporting:**
+        *   **Task:** At the end of the `data_fetcher.py` script, add a simple logging summary that prints the total number of articles fetched, the number successfully extracted for full text, and the number that failed. This will give you immediate visibility into the health of your pipeline.
 
 ---
 
-### Supporting Modules
-These modules handle tasks like query processing, data analysis, and user interaction to complement the fetchers and create a cohesive system.
+### **Phase 2: Expand Data Acquisition (From Fetching to Discovery)**
 
-1. **Query Processor** (`query_processor.py`)  
-   - **Purpose**: Refines and expands user queries using techniques such as synonym expansion (e.g., via WordNet) or potentially LLM-based methods.  
-   - **Status**: Partially built (needs further development for advanced refinement)  
+*   **Goal:** Move beyond fetching from predefined sources and start autonomously discovering new, relevant content from the web.
 
-2. **Memory Module** (`memory.py`)  
-   - **Purpose**: Tracks conversational memory and project context, storing past queries and results to improve future searches.  
-   - **Status**: Not yet built  
-
-3. **Data Analyzer** (`data_analyzer.py`)  
-   - **Purpose**: Analyzes fetched data to identify trends, emerging topics, and citation networks, aiding in finding influential papers or new research directions.  
-   - **Status**: Not yet built  
-
-4. **Data Processor** (`data_processor.py`)  
-   - **Purpose**: Processes retrieved data with features like automated summarization and language translation for better accessibility.  
-   - **Status**: Not yet built  
-
-5. **RAG CLI** (`rag_cli.py`)  
-   - **Purpose**: Provides a command-line interface for user interaction, including query input, feedback, and result display.  
-   - **Status**: Partially built (in progress)  
-
-6. **Logger** (`logger.py`)  
-   - **Purpose**: Implements centralized logging for the entire application, ensuring consistent tracking of events and errors.  
-   - **Status**: Completed and integrated  
-
-7. **Settings** (`settings.py`)  
-   - **Purpose**: Loads and validates configuration settings from a `.env` file, including API keys and other constants.  
-   - **Status**: Completed and integrated  
+*   **Actionable Steps:**
+    1.  **Implement a Web Crawler:**
+        *   **DONE:** Create a new file, `src/crawler.py`. Implement a recursive crawler class that takes a seed URL and max depth.
+    2.  **Integrate Crawler into the Main Workflow (PENDING):**
+        *   **Task:** In `data_fetcher.py`, import the `Crawler` class and create a helper function (`run_crawler_and_fetch`) to manage the crawling process.
+        *   **Task:** Modify the main `fetch_all` function in `data_fetcher.py` to accept `seed_urls` and `crawl_depth` parameters, and add logic to call the new helper function when `"crawler"` is specified as a source.
+        *   **Task:** In `fetchers/blog_fetcher.py`, modify the `fetch_articles` function to accept an optional `direct_urls` list. This is crucial for processing the links discovered by the crawler.
 
 ---
 
-### Additional Potential Modules
-These optional modules could further enhance the system’s capabilities if needed.
+### **Phase 3: Enhance Agentic Capabilities & Access**
 
-1. **Full-Text Fetcher** (`full_text_fetcher.py`)  
-   - **Purpose**: A reusable module to fetch full-text PDFs or XMLs using services like Unpaywall or PMC, reducing redundancy across fetchers.  
-   - **Status**: Not yet built (suggested for future refactoring)  
+*   **Goal:** Make the system smarter and more capable of navigating the real-world web, including content behind paywalls.
 
-2. **Multi-Modal Fetcher**  
-   - **Purpose**: Retrieves non-text content such as images or videos, useful if research requires diverse media types.  
-   - **Status**: Not yet built (low priority unless required)  
-
----
-
-### Summary Table
-Here’s a concise overview of all fetchers and modules:
-
-| **Module/Fetcher**          | **Purpose**                                      | **Status**          |
-|-----------------------------|--------------------------------------------------|---------------------|
-| ArXiv Fetcher               | Fetches preprints from ArXiv                     | Completed           |
-| PubMed Fetcher              | Fetches abstracts and full texts from PubMed     | Completed           |
-| Semantic Scholar Fetcher    | Fetches papers from Semantic Scholar             | Completed           |
-| Web Search Fetcher          | Fetches web articles and blogs                   | Not yet built       |
-| Social Media Fetcher        | Fetches posts from social media (e.g., X)        | Not yet built       |
-| Other Academic Fetchers     | Fetches from IEEE, Springer, etc. (optional)     | Not yet built       |
-| Query Processor             | Refines and expands user queries                 | Partially built     |
-| Memory Module               | Maintains project context and history            | Not yet built       |
-| Data Analyzer               | Analyzes data for trends and citations           | Not yet built       |
-| Data Processor              | Processes data (summarization, translation)      | Not yet built       |
-| RAG CLI                     | User interface for interaction and feedback      | Partially built     |
-| Logger                      | Centralized logging                              | Completed           |
-| Settings                    | Loads and validates configuration                | Completed           |
-| Full-Text Fetcher (optional)| Reusable full-text retrieval logic               | Not yet built       |
-| Multi-Modal Fetcher (opt.)  | Fetches non-text content (images, videos)        | Not yet built       |
-
----
-
-This list covers all currently envisioned components for your Jarvis project. The completed fetchers (ArXiv, PubMed, Semantic Scholar) provide a strong foundation for academic research, while the supporting modules and additional fetchers offer opportunities to expand functionality and data scope. Let me know if you’d like to prioritize or refine any of these!
+*   **Actionable Steps:**
+    1.  **Implement Dynamic Fetching & Recovery:**
+        *   **Task (Re-query):** In `data_fetcher.py`, after a fetcher runs, check if it returned zero or very few results. If so, call the query processor to generate a new, alternative query and run the fetcher again.
+        *   **Task (Dynamic Control):** Modify the `fetch_all` function in `data_fetcher.py` to accept a dictionary that specifies the number of items to fetch per source (e.g., `{'pubmed': 20, 'arxiv': 10}`). This will allow the controlling agent to dynamically adjust fetching strategy based on the needs of the task.
+    2.  **Implement Paywall & Access Strategies:**
+        *   **Task:** In your web fetching logic (e.g., `blog_fetcher` or the new crawler), add a custom `User-Agent` header that mimics a Googlebot (`"Googlebot/2.1 (+http://www.google.com/bot.html)"`). This is the "Search Engine Mimicry" strategy.
+        *   **Task:** Add a fallback to check an archive service. If a direct URL fetch fails, try fetching `http://archive.today/newest/YOUR_URL` to see if a snapshot exists.
+    3.  **Experiment with an Orchestration Framework:**
+        *   **Task:** This is a forward-looking step. Once the above is stable, create a small, separate script to test `LlamaIndex`. Use it to build a simple RAG pipeline on the text files your system has already generated. This will prepare you for more complex, multi-step agentic behavior later.

@@ -13,17 +13,30 @@ from src.utils.metadata_schema import Metadata
 logger = setup_logger()
 logger.info("Semantic Scholar fetcher logger initialized")
 
+"""
+Provides a fetcher for retrieving academic papers from Semantic Scholar.
+
+This module contains functions to query the Semantic Scholar Graph API,
+fetch paper metadata, and save the results. It handles API requests,
+error management, and data formatting.
+"""
+
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def fetch_semantic_scholar(query: str, project_name: str) -> list:
     """
-    Fetch papers from Semantic Scholar based on the query and save them to the project directory.
+    Fetches paper metadata from the Semantic Scholar API based on a search query.
+
+    This function sends a request to the Semantic Scholar Graph API, retrieves
+    paper details, and formats the data into a standardized metadata structure.
+    The collected metadata is then saved to a JSON file.
 
     Args:
         query (str): The search query.
         project_name (str): The name of the project to save the papers under.
 
     Returns:
-        list: A list of Metadata objects (as dicts) for the fetched papers.
+        list: A list of dictionaries, where each dictionary represents the
+        metadata for a fetched paper.
     """
     import requests
 
@@ -104,7 +117,11 @@ def fetch_semantic_scholar(query: str, project_name: str) -> list:
 # ----------------- TESTS -----------------
 def test_fetch_semantic_scholar():
     """
-    Test the Semantic Scholar fetcher with a sample query and project.
+    Tests the Semantic Scholar fetcher with a sample query.
+
+    This function executes a predefined search to validate that the fetcher
+    is operating correctly. It asserts that the output is a list and that
+    the metadata contains the expected fields, logging the results.
     """
     test_query = "science"
     test_project = "test_project"

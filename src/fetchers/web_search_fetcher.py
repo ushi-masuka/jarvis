@@ -12,13 +12,33 @@ from src.utils.logger import setup_logger
 from src.settings import settings
 from src.utils.metadata_schema import Metadata
 
+"""
+Provides a fetcher for retrieving web search results via Google's Custom Search API.
+
+This module contains functions to query the Google Custom Search API, process
+the search results, and format them into a standardized metadata structure.
+It requires a configured API key and Custom Search Engine ID to operate.
+"""
+
 logger = setup_logger()
 logger.info("Web Search fetcher logger initialized")
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def fetch_websearch(query: str, project_name: str) -> list:
     """
-    Fetch web search results from Google Custom Search API and save them to the project directory.
+    Fetches web search results from the Google Custom Search API.
+
+    This function sends a search query to the Google Custom Search API, retrieves
+    the results, and formats them into a standardized metadata structure. The
+    collected metadata is saved to individual and aggregate JSON files.
+
+    Args:
+        query (str): The search query to send to the API.
+        project_name (str): The name of the project for namespacing output data.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary contains the
+        metadata for a fetched search result.
     """
     logger.info(f"Starting web search for query: {query}")
 
@@ -92,7 +112,11 @@ def fetch_websearch(query: str, project_name: str) -> list:
 # ----------------- TESTS -----------------
 def test_fetch_websearch():
     """
-    Test the Web Search fetcher with a sample query and project.
+    Tests the web search fetcher with a sample query.
+
+    This function executes a predefined search to validate that the fetcher
+    is operating correctly. It asserts that the output is a list and that
+    the metadata contains the expected fields, logging the results for review.
     """
     test_query = "machine learning in psychology"
     test_project = "test_project"

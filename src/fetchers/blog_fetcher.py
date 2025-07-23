@@ -10,10 +10,38 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from src.utils.logger import setup_logger
 from src.utils.metadata_schema import Metadata
 
+"""
+Provides a fetcher for discovering and extracting content from blogs.
+
+This module contains the BlogFetcher class, which uses RSS feeds to discover
+relevant article URLs based on a query. It then employs multiple extraction
+libraries (newspaper3k, trafilatura) to scrape content and metadata.
+"""
+
 logger = setup_logger()
 
 class BlogFetcher:
+    """
+    Fetches and extracts blog articles using RSS feeds and web scraping.
+
+    This class discovers article URLs by searching through a predefined list of
+    RSS feeds based on query keywords. It then uses multiple extraction tools
+    to parse and retrieve content from the discovered URLs.
+
+    Attributes:
+        timeout (int): Default timeout for HTTP requests.
+        config (newspaper.Config): Configuration object for the newspaper library.
+        feeds (Dict[str, List[str]]): A dictionary mapping categories to RSS feed URLs.
+        general_feed (str): A fallback RSS feed URL to use if no specific feeds match.
+    """
+
     def __init__(self, timeout=10):
+        """
+        Initializes the BlogFetcher instance.
+
+        Args:
+            timeout (int): The request timeout in seconds.
+        """
         self.timeout = timeout
         self.config = Config()
         self.config.request_timeout = timeout
@@ -33,6 +61,19 @@ class BlogFetcher:
         self.general_feed = "https://medium.com/feed"
 
     def fetch_from_rss(self, query):
+        """
+        Discovers article URLs from RSS feeds based on a query.
+
+        It selects relevant RSS feeds by matching keywords from the query against
+        predefined categories. It then parses these feeds to find entries that
+        match the query keywords in their title or summary.
+
+        Args:
+            query (str): The search query used to find relevant articles.
+
+        Returns:
+            List[str]: A list of unique URLs found in the RSS feeds.
+        """
         urls = []
         keywords = query.lower().split()
         selected_feeds = set()
@@ -56,6 +97,16 @@ class BlogFetcher:
         return list(dict.fromkeys(urls))
 
     def extract_with_newspaper(self, url):
+        """
+        Extracts article content and metadata using the newspaper3k library.
+
+        Args:
+            url (str): The URL of the article to process.
+
+        Returns:
+            Dict[str, str]: A dictionary containing the extracted title, publication
+            date, summary, and other metadata.
+        """
         entry = {"link": url, "source": "newspaper3k", "title": "No Title", "published": "Unknown", "summary": "No Summary"}
         try:
             article = Article(url, config=self.config)
@@ -73,24 +124,48 @@ class BlogFetcher:
         return entry
 
     def extract_with_trafilatura(self, url):
+        """
+        Extracts the main text content from a URL using the trafilatura library.
+
+        Args:
+            url (str): The URL of the article to process.
+
+        Returns:
+            Dict[str, str]: A dictionary containing the extracted summary and other
+            metadata.
+        """
         entry = {"link": url, "source": "trafilatura", "title": "No Title", "published": "Unknown", "summary": "No Summary"}
         try:
             downloaded = fetch_url(url)
             if downloaded:
-                result = extract(downloaded, output_type="json")
-                if result:
-                    result = json.loads(result)
+                text = extract(downloaded, include_comments=False, include_tables=False, deduplicate=True, output_format='python')
+                if text:
                     entry.update({
-                        "title": result.get("title", "No Title"),
-                        "published": result.get("date", "Unknown"),
-                        "summary": result.get("description", "No Summary")[:200]
+                        "summary": text.strip()[:500]
                     })
-                    logger.info(f"Extracted with trafilatura: {entry['title']}")
+                    logger.info(f"Extracted text with trafilatura for {url}")
         except Exception as e:
             logger.warning(f"trafilatura failed for {url}: {str(e)}")
         return entry
 
     def fetch_articles(self, query, project_name, max_articles=None):
+        """
+        Orchestrates the fetching and processing of blog articles.
+
+        This method performs the full workflow: discovering URLs via RSS, extracting
+        content using multiple methods (newspaper3k, trafilatura), creating standardized
+        metadata objects, and saving the results to a JSON file within the project's
+        data directory.
+
+        Args:
+            query (str): The search query to discover articles.
+            project_name (str): The name of the project for namespacing data.
+            max_articles (Optional[int]): The maximum number of articles to process.
+
+        Returns:
+            List[dict]: A list of dictionaries, where each represents the metadata
+            of a fetched article.
+        """
         articles = []
         output_dir = os.path.join("data", project_name, "blog")
         os.makedirs(output_dir, exist_ok=True)

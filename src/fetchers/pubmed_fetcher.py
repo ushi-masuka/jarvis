@@ -14,10 +14,31 @@ from src.settings import settings
 logger = setup_logger()
 logger.info("PubMed fetcher logger initialized")
 
+"""
+Provides a fetcher for retrieving biomedical literature from PubMed.
+
+This module uses the Biopython Entrez API to search and fetch paper metadata
+from the PubMed database. It includes retry logic for network reliability and
+requires an email address for API access, as per NCBI guidelines.
+"""
+
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def fetch_pubmed(query: str, project_name: str) -> list:
     """
-    Fetch papers from PubMed based on the query and save them to the project directory.
+    Fetches paper metadata from PubMed for a given search query.
+
+    This function uses the Entrez API to search PubMed, retrieve the details
+    for the resulting paper IDs, and format them into a standardized metadata
+    structure. The results are saved to a JSON file in the project's data
+    directory.
+
+    Args:
+        query (str): The search term for querying the PubMed database.
+        project_name (str): The name of the project for namespacing the output data.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary contains the
+        metadata for a fetched paper.
     """
     from Bio import Entrez
 
@@ -130,7 +151,11 @@ def fetch_pubmed(query: str, project_name: str) -> list:
 # ----------------- TESTS -----------------
 def test_fetch_pubmed():
     """
-    Test the PubMed fetcher with a sample query and project.
+    Tests the PubMed fetcher with a sample query.
+
+    This function executes a predefined search to validate that the fetcher
+    is operating correctly, and logs the results. It asserts that the
+    output is a list and that the metadata contains the expected fields.
     """
     test_query = "protein protein network analysis"
     test_project = "test_project"

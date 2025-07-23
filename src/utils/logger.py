@@ -1,25 +1,32 @@
+"""
+Configures and provides a standardized logger for the application.
+
+This module centralizes logging configuration, allowing for consistent log formatting
+and handling across all components. It supports file-based logging, console output,
+and configurable log levels.
+"""
+
 import logging
 import os
 from datetime import datetime
 
 def setup_logger():
     """
-    Set up and configure a logger for the application.
+    Initializes and configures a logger instance.
 
-    The logger is set up to log messages of level INFO or higher to a file and
-    the console. The file name is in the format "jarvis_<date>.log", where
-    <date> is the current date in the format "%Y%m%d".
+    This function sets up a logger with specified handlers for console and file output.
+    It uses the standard library for formatted console logging and standard file handlers
+    for persistent logs.
 
-    If the logger has already been configured, this function does nothing and
-    simply returns the configured logger.
+    Args:
+        None
 
     Returns:
-        logging.Logger: A configured logger instance.
+        logging.Logger: The configured logger instance.
     """
     # Create a logger
     logger = logging.getLogger("JarvisLogger")
     logger.setLevel(logging.INFO)  # Default log level is INFO
-    logger.setLevel(logging.INFO)  # Default log level
 
     # Avoid duplicate logging if already configured
     if not logger.handlers:

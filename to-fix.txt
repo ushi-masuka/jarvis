@@ -1,6 +1,20 @@
-1. special words are being removed from query: to preserve them or not?
-2. query processor revamp.(use llm for better query generation based on the perticular fetcher.)
-3. add fetchers- webscraping, web forums etc.
-4. feature to show the names/links of papers that could have been relevant but are behind a paywall.
-5. arxiv fetcher returning shit results. 
-6. medium fetcher giving issues.
+# Priority Fixes & Core Improvements
+
+## 1. Critical Fetcher Bugs
+- [ ] **ArXiv Fetcher:** Investigate and fix poor quality results.
+- [ ] **Medium Fetcher:** Resolve outstanding issues causing errors.
+- [ ] **Blog Fetcher:** Correct the usage of `trafilatura` to remove warnings and improve stability.
+
+## 2. Data Extraction & Ingestion
+- [ ] **Multi-Layered Extraction:** Implement the tiered extractor chain (`trafilatura`, `readability-lxml`, etc.) in `utils/extraction.py`.
+- [ ] **PDF Extraction:** Add a new function for robust PDF text extraction using `PyMuPDF`.
+- [ ] **Data Sanitization:** Add a step in `ingest.py` to sanitize metadata before upserting to the vector DB to prevent errors.
+- [ ] **Reporting:** Add a summary report at the end of `data_fetcher.py` to track fetch/extraction success rates.
+
+## 3. Query Processing
+- [ ] **Query Revamp:** Improve `query_processor.py` to better handle special characters/words.
+- [ ] **LLM-based Generation:** Explore using an LLM to generate source-specific queries for fetchers.
+
+## 4. Future Enhancements
+- [ ] **New Fetchers:** Add fetchers for web forums, social media, etc.
+- [ ] **Paywall Detection:** Implement a feature to identify and report content that is behind a paywall.

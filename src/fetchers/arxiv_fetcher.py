@@ -13,10 +13,31 @@ from src.utils.metadata_schema import Metadata
 logger = setup_logger()
 logger.info("ArXiv fetcher logger initialized")
 
+"""
+Provides a fetcher for retrieving academic papers from the ArXiv repository.
+
+This module contains the primary function for querying the ArXiv API, fetching
+metadata for papers matching the query, and saving the results. It includes
+retry logic to handle transient network issues.
+"""
+
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
-def fetch_arxiv(query: str, project_name: str) -> list:
+def fetch_arxiv(query: str, project_name: str, max_results: int = 20) -> list:
     """
-    Fetch papers from ArXiv based on the query and save them to the project directory.
+    Fetches paper metadata from ArXiv based on a search query.
+
+    This function queries the ArXiv API, processes the results, and formats them
+    into a standardized metadata structure. The results, including PDF links,
+    are saved to a JSON file within the specified project's data directory.
+
+    Args:
+        query (str): The search query for finding papers on ArXiv.
+        project_name (str): The name of the project for namespacing the output data.
+        max_results (int): The maximum number of results to retrieve from ArXiv.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary is the metadata
+        for a fetched paper.
     """
     import arxiv  # Local import to avoid issues if not installed elsewhere
 
@@ -25,8 +46,8 @@ def fetch_arxiv(query: str, project_name: str) -> list:
 
     search = arxiv.Search(
         query=query,
-        max_results=10,
-        sort_by=arxiv.SortCriterion.SubmittedDate,
+        max_results=max_results,
+        sort_by=arxiv.SortCriterion.Relevance,
         sort_order=arxiv.SortOrder.Descending
     )
 
@@ -94,7 +115,7 @@ def fetch_arxiv(query: str, project_name: str) -> list:
 # ----------------- TESTS -----------------
 def test_fetch_arxiv():
     """
-    Test the ArXiv fetcher with a sample query and project.
+    Runs a simple test for the ArXiv fetcher using a sample query. It checks if the fetch works and verifies the output format, which is great for ensuring everything's set up correctly during development.
     """
     test_query = "protein protein network analysis"
     test_project = "test_project"

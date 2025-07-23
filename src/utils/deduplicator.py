@@ -8,18 +8,33 @@ from src.utils.logger import setup_logger
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_root)
 
+"""Provides a utility for consolidating and deduplicating metadata records.
+
+This module scans a project's data directory, reads metadata from multiple
+source-specific subdirectories, and identifies unique records using a
+prioritized set of identifiers (e.g., DOI, PMID). The resulting unique
+metadata is saved to a consolidated file.
+"""
+
 logger = setup_logger()
 logger.info("Deduplicator logger initialized")
 
 def deduplicate_metadata(project_name: str) -> list:
     """
-    Deduplicate metadata from all fetchers and save the unique entries.
+    Consolidates and deduplicates metadata from multiple source directories.
+
+    This function scans a project's data directory, reads all JSON metadata files
+    from various fetcher-specific subdirectories, and identifies unique entries
+    based on a priority list of identifiers (e.g., DOI, PMID). The resulting
+    unique entries are saved to 'deduplicated/metadata.json'.
 
     Args:
-        project_name (str): The name of the project to process data from.
+        project_name (str): The name of the project directory located within the
+            main 'data' folder.
 
     Returns:
-        list: A list of dictionaries containing unique metadata entries.
+        list: A list of unique metadata entries (dictionaries). Returns an empty
+        list if no source data is found or an error occurs.
     """
     data_dir = os.path.join("data", project_name)
     unique_entries = []

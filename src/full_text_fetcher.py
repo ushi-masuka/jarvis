@@ -8,13 +8,33 @@ from typing import List, Dict, Any, Optional
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.utils.logger import setup_logger
+from src.utils.extraction import extract_text_from_html, extract_text_from_pdf
 
 logger = setup_logger()
 logger.info("Full text fetcher initialized")
 
 UNPAYWALL_EMAIL = os.getenv("UNPAYWALL_EMAIL", "")
 
+"""
+Provides functionality for fetching the full text of documents.
+
+This module contains functions to download PDF and HTML content from various
+sources, including direct URLs and the Unpaywall API. It orchestrates the
+fetching process for a list of document metadata entries.
+"""
+
 def download_pdf(url: str, out_path: str, timeout: int = 30) -> bool:
+    """
+    Downloads a PDF file from a given URL.
+
+    Args:
+        url (str): The URL of the PDF to download.
+        out_path (str): The local file path to save the PDF to.
+        timeout (int): The timeout for the request in seconds.
+
+    Returns:
+        bool: True if the download was successful, False otherwise.
+    """
     try:
         logger.info(f"Attempting PDF download: {url}")
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -32,6 +52,16 @@ def download_pdf(url: str, out_path: str, timeout: int = 30) -> bool:
         return False
 
 def fetch_unpaywall_pdf(doi: str, out_path: str) -> Optional[str]:
+    """
+    Fetches an open-access PDF using the Unpaywall API for a given DOI.
+
+    Args:
+        doi (str): The Digital Object Identifier of the paper.
+        out_path (str): The local file path to save the PDF to.
+
+    Returns:
+        Optional[str]: The URL of the downloaded PDF if successful, else None.
+    """
     if not UNPAYWALL_EMAIL:
         logger.warning("No UNPAYWALL_EMAIL set; skipping Unpaywall PDF fetch.")
         return None
@@ -51,6 +81,17 @@ def fetch_unpaywall_pdf(doi: str, out_path: str) -> Optional[str]:
     return None
 
 def fetch_html(url: str, out_path: str, timeout: int = 30) -> bool:
+    """
+    Downloads the HTML content of a webpage.
+
+    Args:
+        url (str): The URL of the webpage to download.
+        out_path (str): The local file path to save the HTML to.
+        timeout (int): The timeout for the request in seconds.
+
+    Returns:
+        bool: True if the download was successful, False otherwise.
+    """
     try:
         logger.info(f"Attempting HTML download: {url}")
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -68,10 +109,28 @@ def fetch_html(url: str, out_path: str, timeout: int = 30) -> bool:
         return False
 
 def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext_dir: str) -> Dict[str, Any]:
+    """
+    Fetches the full text for a single metadata entry.
+
+    This function attempts to retrieve the full text of a document by trying
+    a series of methods in order: direct PDF URL, Unpaywall API (via DOI),
+    PubMed Central, and finally falling back to the source link for HTML.
+
+    Args:
+        entry (Dict[str, Any]): The metadata dictionary for a single document.
+        project_name (str): The name of the project for namespacing.
+        fulltext_dir (str): The directory to save the full-text files in.
+
+    Returns:
+        Dict[str, Any]: The updated metadata entry with full-text information.
+    """
     entry_id = entry.get("id") or entry.get("link") or str(hash(str(entry)))
     safe_id = str(entry_id).replace("/", "_").replace(":", "_")
     pdf_path = os.path.join(fulltext_dir, f"{safe_id}.pdf")
     html_path = os.path.join(fulltext_dir, f"{safe_id}.html")
+
+    # Initialize full_text field
+    entry["full_text"] = ""
 
     # 1. Try direct PDF link
     if entry.get("pdf_url"):
@@ -79,6 +138,7 @@ def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext
             entry["fulltext_path"] = pdf_path
             entry["fulltext_status"] = "success"
             entry["fulltext_type"] = "pdf"
+            entry["full_text"] = extract_text_from_pdf(pdf_path)
             return entry
         else:
             entry["fulltext_status"] = "pdf_url_failed"
@@ -91,6 +151,7 @@ def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext
             entry["fulltext_status"] = "success"
             entry["fulltext_type"] = "pdf"
             entry["fulltext_pdf_url"] = pdf_url
+            entry["full_text"] = extract_text_from_pdf(pdf_path)
             return entry
         else:
             entry["fulltext_status"] = "unpaywall_failed"
@@ -102,6 +163,7 @@ def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext
             entry["fulltext_path"] = pdf_path
             entry["fulltext_status"] = "success"
             entry["fulltext_type"] = "pdf"
+            entry["full_text"] = extract_text_from_pdf(pdf_path)
             return entry
         else:
             entry["fulltext_status"] = "pmc_failed"
@@ -112,6 +174,7 @@ def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext
             entry["fulltext_path"] = html_path
             entry["fulltext_status"] = "success"
             entry["fulltext_type"] = "html"
+            entry["full_text"] = extract_text_from_html(html_path)
             return entry
         else:
             entry["fulltext_status"] = "html_failed"
@@ -121,6 +184,21 @@ def fetch_full_text_for_entry(entry: Dict[str, Any], project_name: str, fulltext
     return entry
 
 def fetch_full_text_for_all(metadata_list: List[Dict[str, Any]], project_name: str, delay: float = 1.0) -> List[Dict[str, Any]]:
+    """
+    Iterates through a list of metadata entries and fetches the full text for each.
+
+    This function orchestrates the full-text fetching process for an entire
+    dataset, applying a delay between requests to respect server rate limits.
+    The updated metadata is saved to a new JSON file.
+
+    Args:
+        metadata_list (List[Dict[str, Any]]): A list of metadata entries.
+        project_name (str): The name of the project for namespacing.
+        delay (float): The delay in seconds between fetch attempts.
+
+    Returns:
+        List[Dict[str, Any]]: The list of updated metadata entries.
+    """
     fulltext_dir = os.path.join("data", project_name, "fulltext")
     os.makedirs(fulltext_dir, exist_ok=True)
     results = []
