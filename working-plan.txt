@@ -4,51 +4,37 @@ This document outlines a clear, actionable roadmap for developing the Jarvis res
 
 ---
 
-### **Phase 1: Strengthen the Core (Data Quality & Robustness)**
+### Phase 1: Core Data Quality & Robustness – **DONE**
+- Multi-layered extraction pipeline (`trafilatura`, `readability-lxml`, `boilerpy3`, `PyMuPDF`) implemented and validated.
+- PDF extraction, ingestion sanitization, and summary reporting now stable.
 
-*   **Goal:** Fix the foundational issues that are currently limiting your system's effectiveness: poor data extraction and ingestion errors. A high-quality dataset is the most critical asset.
+### Phase 2: Autonomous Data Acquisition – **MOSTLY DONE**
+- Web crawler (`src/crawler.py`) built; integration with main pipeline pending.
 
-*   **Actionable Steps:**
-    1.  **Fix Known Bugs:**
-        *   **Task:** In `fetchers/blog_fetcher.py`, remove the `output_type="json"` argument from the `trafilatura.extract()` call to eliminate the warning and potential errors.
-    2.  **Build a Multi-Layered Extraction Pipeline:**
-        *   **Goal:** Drastically increase the success rate of full-text extraction by creating a resilient, multi-step process.
-        *   **Tasks:**
-            *   **A. Implement a Tiered Extractor Chain:** In `utils/extraction.py`, modify `extract_text_from_html` to try a sequence of extractors until one succeeds. The recommended order is: `trafilatura` -> `readability-lxml` -> `newspaper3k` -> `boilerpy3`.
-            *   **B. Add PDF Extraction:** Create a new function `extract_text_from_pdf` in `utils/extraction.py` using the `PyMuPDF` library to handle PDF documents.
-            *   **C. Implement Retry Logic:** Wrap the initial URL fetch (e.g., `trafilatura.fetch_url`) in a `try...except` block with a simple retry loop (2-3 attempts) to handle transient network errors.
-            *   **D. (Optional/Advanced) Handle JavaScript:** For key sources that are heavily JS-based, create a helper function that uses `selenium` or `playwright` to render the page before passing the HTML to the extractor chain.
-    3.  **Sanitize Data for Ingestion:**
-        *   **Task:** In `ingest.py`, before the `collection.upsert()` call, add a "sanitization" step. This step should loop through the metadata of each document and convert any list values into comma-separated strings to prevent ChromaDB errors.
-    4.  **Add Basic Reporting:**
-        *   **Task:** At the end of the `data_fetcher.py` script, add a simple logging summary that prints the total number of articles fetched, the number successfully extracted for full text, and the number that failed. This will give you immediate visibility into the health of your pipeline.
+### Phase 3: Agentic Capabilities – **IN PROGRESS**
+- Query processor revamped (classic mode, boolean logic, phrase support).
+- Dynamic fetching, paywall strategies, and fallback logic partially implemented.
+- Orchestration (multi-expert, RAG) stubbed for future.
 
 ---
 
-### **Phase 2: Expand Data Acquisition (From Fetching to Discovery)**
+### Phase 4: Validation & UX (Current)
 
-*   **Goal:** Move beyond fetching from predefined sources and start autonomously discovering new, relevant content from the web.
+**Goal:** Ensure the pipeline is robust, user-friendly, and ready for broader use.
 
-*   **Actionable Steps:**
-    1.  **Implement a Web Crawler:**
-        *   **DONE:** Create a new file, `src/crawler.py`. Implement a recursive crawler class that takes a seed URL and max depth.
-    2.  **Integrate Crawler into the Main Workflow (PENDING):**
-        *   **Task:** In `data_fetcher.py`, import the `Crawler` class and create a helper function (`run_crawler_and_fetch`) to manage the crawling process.
-        *   **Task:** Modify the main `fetch_all` function in `data_fetcher.py` to accept `seed_urls` and `crawl_depth` parameters, and add logic to call the new helper function when `"crawler"` is specified as a source.
-        *   **Task:** In `fetchers/blog_fetcher.py`, modify the `fetch_articles` function to accept an optional `direct_urls` list. This is crucial for processing the links discovered by the crawler.
+**Actionable Steps:**
+1. **Dependency/Env:** Fix `tenacity` import error; document environment setup.
+2. **Validation:** Run full end-to-end pipeline in classic mode; add integration tests.
+3. **Medium Fetcher:** Finalise Selenium/ChromeDriver or migrate to Playwright for robust extraction and paywall handling.
+4. **Image-only PDFs:** Add optional OCR (Tesseract) for scanned/graphic PDFs.
+5. **Trend Analyzer:** Implement `trend_analyzer.py` for topic trends and gap analysis.
+6. **Expert Router:** Complete rule/ML-based routing in `expert_router.py`.
+7. **UX Prototype:** Build a Streamlit dashboard for project overview and interactive querying.
 
 ---
 
-### **Phase 3: Enhance Agentic Capabilities & Access**
-
-*   **Goal:** Make the system smarter and more capable of navigating the real-world web, including content behind paywalls.
-
-*   **Actionable Steps:**
-    1.  **Implement Dynamic Fetching & Recovery:**
-        *   **Task (Re-query):** In `data_fetcher.py`, after a fetcher runs, check if it returned zero or very few results. If so, call the query processor to generate a new, alternative query and run the fetcher again.
-        *   **Task (Dynamic Control):** Modify the `fetch_all` function in `data_fetcher.py` to accept a dictionary that specifies the number of items to fetch per source (e.g., `{'pubmed': 20, 'arxiv': 10}`). This will allow the controlling agent to dynamically adjust fetching strategy based on the needs of the task.
-    2.  **Implement Paywall & Access Strategies:**
-        *   **Task:** In your web fetching logic (e.g., `blog_fetcher` or the new crawler), add a custom `User-Agent` header that mimics a Googlebot (`"Googlebot/2.1 (+http://www.google.com/bot.html)"`). This is the "Search Engine Mimicry" strategy.
-        *   **Task:** Add a fallback to check an archive service. If a direct URL fetch fails, try fetching `http://archive.today/newest/YOUR_URL` to see if a snapshot exists.
-    3.  **Experiment with an Orchestration Framework:**
-        *   **Task:** This is a forward-looking step. Once the above is stable, create a small, separate script to test `LlamaIndex`. Use it to build a simple RAG pipeline on the text files your system has already generated. This will prepare you for more complex, multi-step agentic behavior later.
+### Phase 5: Future Enhancements
+- LLM-based query rewriting for fetchers.
+- Social/forum fetchers.
+- Enhanced paywall detection and reporting.
+- Full multi-agent orchestration.

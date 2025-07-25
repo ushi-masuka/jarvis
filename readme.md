@@ -60,7 +60,7 @@ Jarvis is an open-source, modular research/study assistant designed to help user
 │       ├── logger.py                # [Completed]
 │       ├── metadata_filter.py       # [Completed]
 │       ├── metadata_schema.py       # [Completed]
-│       ├── query_processor.py       # [Partial]
+│       ├── query_processor.py       # [Completed]
 │       ├── vector_db.py             # [Partial]
 │       └── ...                      # [Planned] More utils
 ├── tests/                  # [Partial] Unit tests
@@ -78,18 +78,14 @@ Jarvis is an open-source, modular research/study assistant designed to help user
 - [Stub] Minimal code exists; full implementation needed
 - [Planned] Not yet implemented
 
-**Major To-Do (Priority: Core Stability & Data Quality):**
-- **Fix Critical Fetcher Bugs**:
-  - Address issues in `arxiv_fetcher.py` and `medium_fetcher.py`.
-  - Correct `trafilatura` usage in `blog_fetcher.py`.
-- **Improve Data Extraction**:
-  - Implement a multi-layered extraction pipeline (`trafilatura`, `readability-lxml`, etc.) in `utils/extraction.py`.
-  - Add robust PDF extraction using `PyMuPDF`.
-- **Stabilize Ingestion Pipeline**:
-  - Sanitize metadata in `ingest.py` to prevent database errors.
-  - Add logging and reporting to `data_fetcher.py` to monitor success/failure rates.
-- **Revamp Query Processing**:
-  - Improve the query processor (`query_processor.py`) to handle special words and generate better, source-specific queries.
+**Open Issues & Next Milestones (as of 23 Jul 2025):**
+- **Dependency Fix** – Resolve `ModuleNotFoundError: tenacity` by standardising env activation and re-installing deps.
+- **Medium Fetcher** – Finalise Selenium/ChromeDriver flow or switch to Playwright; ensure paywall-friendly extraction.
+- **Image-only PDFs** – Add optional OCR (Tesseract) layer in `utils/extraction.py`.
+- **Trend Analyzer** – Implement `trend_analyzer.py` to surface topic trajectories and gaps.
+- **Expert Router** – Complete rule/ML-based routing in `expert_router.py`.
+- **End-to-End Validation** – Run classic-mode pipeline after dependency fix; add integration tests under `/tests`.
+- **UX Prototype** – Spike a Streamlit dashboard for project overview and interactive querying.
 
 
 ## Getting Started

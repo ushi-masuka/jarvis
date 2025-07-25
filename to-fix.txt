@@ -1,19 +1,20 @@
 # Priority Fixes & Core Improvements
 
-## 1. Critical Fetcher Bugs
-- [ ] **ArXiv Fetcher:** Investigate and fix poor quality results.
-- [ ] **Medium Fetcher:** Resolve outstanding issues causing errors.
-- [ ] **Blog Fetcher:** Correct the usage of `trafilatura` to remove warnings and improve stability.
+## Open Issues (as of 23 Jul 2025)
 
-## 2. Data Extraction & Ingestion
-- [ ] **Multi-Layered Extraction:** Implement the tiered extractor chain (`trafilatura`, `readability-lxml`, etc.) in `utils/extraction.py`.
-- [ ] **PDF Extraction:** Add a new function for robust PDF text extraction using `PyMuPDF`.
-- [ ] **Data Sanitization:** Add a step in `ingest.py` to sanitize metadata before upserting to the vector DB to prevent errors.
-- [ ] **Reporting:** Add a summary report at the end of `data_fetcher.py` to track fetch/extraction success rates.
+- [ ] **Dependency/Env:** Resolve `ModuleNotFoundError: tenacity` – standardise environment setup and re-install dependencies.
+- [ ] **Medium Fetcher:** Finalise Selenium/ChromeDriver flow (or migrate to Playwright); ensure robust extraction and paywall handling.
+- [ ] **Image-only PDFs:** Add optional OCR (Tesseract) layer to `utils/extraction.py` for scanned/graphic PDFs.
+- [ ] **Trend Analyzer:** Implement `trend_analyzer.py` to surface research trends and topic gaps.
+- [ ] **Expert Router:** Complete rule/ML-based routing in `expert_router.py`.
+- [ ] **Validation:** Run end-to-end pipeline in classic mode after dependency fix; add integration tests.
+- [ ] **UX Prototype:** Create a Streamlit dashboard for project overview and interactive querying.
 
-## 3. Query Processing
-- [ ] **Query Revamp:** Improve `query_processor.py` to better handle special characters/words.
-- [ ] **LLM-based Generation:** Explore using an LLM to generate source-specific queries for fetchers.
+## Deferred/Backlog
+- [ ] **LLM-based Query Generation:** Explore LLMs for fetcher-specific query rewriting (future phase).
+- [ ] **Social/Forum Fetchers:** Add fetchers for forums, social media, etc. (future phase).
+- [ ] **Paywall Detection:** Enhance detection/reporting of paywalled content.
+
 
 ## 4. Future Enhancements
 - [ ] **New Fetchers:** Add fetchers for web forums, social media, etc.

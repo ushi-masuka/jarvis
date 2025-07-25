@@ -11,5 +11,11 @@ data/
 *.pyd
 *.db
 my_journey.md
-
-
+chroma_db/
+desktop.ini
+.DS_Store
+Thumbs.db
+.pytest_cache/
+.coverage
+htmlcov/
+transcripts/

@@ -1,0 +1,10 @@
+# Development and Testing dependencies for Jarvis Research Agent
+
+pytest==8.4.1
+black==24.4.2
+flake8==7.0.0
+isort==5.13.2
+mypy==1.10.0
+coverage==7.5.0
+
+# Add any other dev tools you use below
